@@ -1,0 +1,10 @@
+# dirs
+.vscode/
+objs/
+
+# files
+.DS_Store
+._*
+*.o
+irc_serv
+ircbot

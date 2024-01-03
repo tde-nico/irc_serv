@@ -15,9 +15,8 @@ HIGH_RED		= \033[91m
 #####   COMMANDS   #####
 
 CC				= c++
-CFLAGS			= -Wall -Wextra -Werror -std=c++11
-#-lm -I/usr/include/postgresql -lpq
-#CFLAGS			= -Wall -Wextra -Werror -std=c++11 -lm -I/usr/include/postgresql -l /usr/include/postgresql -L/usr/lib/postgresql/14/lib/ -lpq -l /usr/lib/x86_64-linux-gnu
+CFLAGS			= -Wall -Wextra -Werror -std=c++11 -g
+PGFLAGS			= -I/usr/include/postgresql -lpq
 
 MD				= mkdir -p
 RM				= rm -rf
@@ -48,11 +47,11 @@ OBJS			= $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 all: $(NAME)
 
 $(NAME): $(OBJ_SUB_DIRS) $(OBJS)
-	@ $(CC) $(CFLAGS) $(OBJS) -o $@
+	@ $(CC) $(CFLAGS) $(OBJS) -o $@ $(PGFLAGS)
 	@ echo "$(GREEN)[+] $(NAME) compiled$(END)"
 
 $(OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
-	@ $(CC) $(CFLAGS) -I $(INCLUDE) -c $< -o $@
+	@ $(CC) $(CFLAGS) -I $(INCLUDE) -c $< -o $@ $(PGFLAGS)
 	@ echo "$(BLUE)[+] $@ compiled$(END)"
 
 $(OBJ_SUB_DIRS):
