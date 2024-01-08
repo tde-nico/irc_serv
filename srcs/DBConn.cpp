@@ -27,6 +27,7 @@ void	DBConn::setup(std::string const &connect)
 	{
 		console_log(fmt_str("Error DBConn: %s\n", PQerrorMessage(this->conn)), 0);
 		this->finish();
+		return ;
 	}
 	this->status = 0;
 	console_log("DB Connected");
