@@ -1,0 +1,171 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{svg}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+
+
+
+\title{IRC Server}
+\author{Tommaso De Nicola 2006686}
+\date{January 2024}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+\fontsize{12pt}{14pt}\selectfont
+The system under consideration is an IRC (Internet Relay Chat) server, implemented in C++ and equipped with a PostgreSQL database for managing channels and activity logs. Users interact with the server using their preferred IRC client (in this case, we will use KVIrc) where they can use the classical IRC commands to join/leave/chat in channels and even more.
+
+\vspace{12pt}
+
+\begin{figure}[ht]
+    \centering
+    \includesvg{environment.svg}
+    \caption{Environment}
+    \label{fig:environment.svg}
+\end{figure}
+
+\newpage
+
+
+\section{User Requirements}
+
+This is a list of commands that can be used in the server to make easier the communication and the utilization of the server itself.
+\vspace{12pt}
+
+\textbf{Non Registered User}
+\begin{enumerate}
+    \item Nick: the nickname for the registration
+    \item Pass: the password of the server
+    \item Quit: quit from the server
+    \item User: the username for the registration
+\end{enumerate}
+\textbf{User}
+\begin{enumerate}
+    \item Join: joins a channel with optional password
+    \item Notice: sends a message only at one user in a channel
+    \item Part: quits from a channel
+    \item Ping: send connection check
+    \item Pong: returned connection check
+    \item PrivMsg: opens a private message chat with another user
+\end{enumerate}
+\textbf{Admin}
+\begin{enumerate}
+    \item Kick: kicks from a channel
+\end{enumerate}
+
+\begin{figure}[ht]
+    \centering
+    \includesvg{use_case.svg}
+    \caption{Use Case}
+    \label{fig:use_case.svg}
+\end{figure}
+
+
+\newpage
+
+
+
+\section{System Requirements}
+The system requirements we need, are all connected by a main component which we will call "Server", this one connects the database connection module to the others components, like the channel one, that can load previously saved channels from the database, and handles all channel correlated tasks, then we have the client component which represents the connected clients as users of this system, and they can also use commands via the command handler component.
+
+\begin{figure}[ht]
+    \centering
+    \includesvg[width=1.45\textwidth,height=6.3cm]{components.svg}
+    \caption{Components}
+    \label{fig:components.svg}
+\end{figure}
+
+\vspace{12pt}
+\vspace{12pt}
+\vspace{12pt}
+
+Here an example of a private message from a sender user to a receiver user, and how the server components handles it.
+\vspace{12pt}
+
+\begin{figure}[ht]
+    \centering
+    \includesvg[width=1.1\textwidth,height=6.2cm]{message.svg}
+    \caption{Private Message Send Example}
+    \label{fig:message.svg}
+\end{figure}
+
+
+\newpage
+
+
+
+\section{Implementation}
+
+\subsection{Components}
+
+\subsubsection{Server}
+The Server Component on creation, loads from the database all the previously saved channels and creates them, then when started, it opens the main socket where it will listen for incoming connections, all the server sockets interaction are handled by a polling event, that calls, the handlers for connection, disconnection and messages;
+in the message handler calls the command handler to execute possible commands.
+
+\subsubsection{Client}
+When a connection poll event is triggered, a new client is created, with his own socket and identifiers; it can reply messages or join/leave channels.
+
+\subsubsection{Channel}
+A channel can be created by a user or loaded from the db, it can have an optional password for security reasons; a normal message in a channel is broadcasted to all others users in that channel, it can else add/remove clients or even kick them (admins only); by default an admin is the creator of the channel.
+
+\subsubsection{CommandHandler}
+It stores all the commands instances, when receiving a message from a client, it analyze it, replying with an error if it's an unknown command, else if the user has enough permissions it will execute the received command. 
+
+\subsubsection{Command}
+Command is an abstract class that defines an interface for commands, they all have, the authorization level needed to be invoked and the execute function; every command does also the needed checks before been invoked.
+
+\subsubsection{DBConn}
+On creation it connects to the Database, it can execute commands, like insert, delete or update, or can execute queries, it also provide a logging method to monitor the server activities that are also saved on the database.
+
+
+\subsection{Database}
+The database schema is composed by 2 tables, the first one, for the logs, which have a unique id used to differentiate them, the log, and the date, which is the time stamp of that log; the second table is the table of channels, this is used when the server is started, there the channels in the table will be loaded, on a new channel creation, it's automatically added to the table.
+\begin{lstlisting}[language=SQL, caption={DB Schema}, label={DB Schema}]
+CREATE TABLE logs (
+	id SERIAL PRIMARY KEY,
+	log VARCHAR(1023),
+	date TIMESTAMP
+);
+
+CREATE TABLE channels (
+	name VARCHAR(255) PRIMARY KEY,
+	password VARCHAR(255) NULL
+);
+\end{lstlisting}
+
+
+\section{Results}
+This server provides a basic IRC experience, with all the needed features, instead of being only experimental, it can really be used as a server (I recommend using KVIrc as client).
+
+
+\end{document}
