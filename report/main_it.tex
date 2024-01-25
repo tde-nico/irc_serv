@@ -1,0 +1,178 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{svg}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+
+
+
+\title{IRC Server}
+\author{Tommaso De Nicola 2006686}
+\date{Gennaio 2024}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduzione}
+\fontsize{12pt}{14pt}\selectfont
+Il sistema preso in considerazone è un server IRC (Internet Relay Chat), implementato in C++ e provvisto anche con un database gestito tramite PostgreSQL per gestire i canali e i log. Gli utenti interagiscono con il server utilizzando il loro client IRC preferito (in questo caso utilizzeremo KVIrc), dove si potranno utilizzare i classici comandi IRC per entrare/uscire/chattare in vari canali ed altro ancora.
+
+\vspace{12pt}
+
+\begin{figure}[ht]
+    \centering
+    \includesvg{environment.svg}
+    \caption{Ambiente}
+    \label{fig:environment.svg}
+\end{figure}
+
+\newpage
+
+
+\section{Requisiti Utente}
+
+Questa è una lista dei comandi che possono essere utilizzati all'interno del server per rendere più facile la comunicazione e l'utilizzo del server stesso.
+\vspace{12pt}
+
+\textbf{Non Registered User}
+\begin{enumerate}
+    \item Nick: il nickname per la registrazione
+    \item Pass: la password del server
+    \item Quit: esce dal server
+    \item User: lo username per la registrazione
+\end{enumerate}
+\textbf{User}
+\begin{enumerate}
+    \item Join: entra in un canale (password opzionale)
+    \item Notice: manda un messaggio ad un solo utente in un canale
+    \item Part: esce dal canale
+    \item Ping: invia un controllo di connessione
+    \item Pong: ritorno del controllo di connessione
+    \item PrivMsg: apre una chat privata con un altro utente
+\end{enumerate}
+\textbf{Admin}
+\begin{enumerate}
+    \item Kick: caccia dal canale
+\end{enumerate}
+
+\begin{figure}[ht]
+    \centering
+    \includesvg{use_case.svg}
+    \caption{Use Case}
+    \label{fig:use_case.svg}
+\end{figure}
+
+
+\newpage
+
+
+
+\section{Requisiti di Sistema}
+I requisiti di sistema che necessitiamo sono, partendo dal componente principale al quale si connetteranno gli altri componenti è il "Server", questo sarà connesso agli altri componenti come ad esempio il modulo di comunicazione con il database, o il modulo per i canali che potrà caricare canali precedentemente creati direttamente dal database, e gestire tutte le azioni correlate ai canali, poi abbiamo il componente "Client" che ci permette di rappresentare i client e utenti connessi al nostro sistema, che chiaramente potranno usufruire dei vari comandi tramite il gestore apposito.
+
+\begin{figure}[ht]
+    \centering
+    \includesvg[width=1.45\textwidth,height=6.3cm]{components.svg}
+    \caption{Componenti}
+    \label{fig:components.svg}
+\end{figure}
+
+\vspace{12pt}
+\vspace{12pt}
+\vspace{12pt}
+
+
+Ecco un esempio di un messaggio privato tra due utenti, e come il server con i suoi componenti lo gestiscono.
+\vspace{12pt}
+
+\begin{figure}[ht]
+    \centering
+    \includesvg[width=1.1\textwidth,height=6.2cm]{message.svg}
+    \caption{Esempio di Invio di un Messaggio Privato}
+    \label{fig:message.svg}
+\end{figure}
+
+
+\newpage
+
+
+
+\section{Implementazione}
+\vspace{12pt}
+
+\subsection{Componenti}
+
+\subsubsection{Server}
+Il componente del server, quando vene creato, carica dal database i canali creati e salvati precedentemente, dopodichè apre il socket principale in ascolto di richieste di connessione, tutte le connessioni verranno gestite tramite dei polling events che chiameranno i vari gestori di connessione, disconnessione e messaggi; nel gestore dei messaggi verrà poi chiamato il gestore dei comandi per poi evntualmente eseguirne.
+
+\subsubsection{Client}
+Quando un un poll envent di connessione viene innescato, un nuovo client viene creato con il suo socket e identificativi; esso può messaggiare, entrare, creare, uscire anche da canali.
+
+\subsubsection{Channel}
+Un canale può essere creato da un utente o caricato da database, esso può possedere una password opzionale per ragioni di sicurezza; un normale messaggio in un canale viene inviato ad ogni altro utente presente in quel canale, può anche aggiungere, rimuovere oppure anche cacciare utenti (quest'ultimo solo per admin); in automatico l'admin di un canale è il creatore stesso.
+
+\subsubsection{CommandHandler}
+Esso Contiene tuttle le istanze dei vari comandi e le gestisce, quando un messaggio viene ricevuto, esso viene analizzato per identificarlo come un normale messaggio, un comando inesistente, o un comando valido (per essere eseguiti il client deve avere un sufficiente livello d'autorizzazzione).
+
+\subsubsection{Command}
+Il componente "Command" è una astrazione utilizzata come interfaccia per ogni comando per poter definire delle necessità di base, ognuno avrà quindi un livello di atorizzazzione richiesto per essere invocato, e la funzione d'esecuzione del comando in se; ogni comando ha anche delle condizioni che devono essere verificae prima della sua invocazione.
+
+\subsubsection{DBConn}
+On creation it connects to the Database, it can execute commands, like insert, delete or update, or can execute queries, it also provide a logging method to monitor the server activities that are also saved on the database.
+Alla creazione si connetterà al database, esso può eseguire comandi, come inserimento, cancellazzione o aggiornamento dal database, o può eseguire delle interrogazioni al database, esso inoltre fornisce anche un sistema di logging per monitorare il sistema e ne archivia una copia nel database.
+
+
+\vspace{12pt}
+\subsection{Database}
+Lo schema del database è composto da 2 tabelle, la prima per i logs, che hanno un id unico utilizzato per differenziarli tra di loro, i log in se, e la "data", cioè il timestamp del momento dell'evento segnato; la seconda tabella è dedcata ai canali, essa è utilizzata per salvare i canali con le loro informazioni, quali nome e password opzionale, questi verranno caricati all'avvio del server, quando invece viene creato un nuovo canale, esso viene inserito all'interno della tabella automaticamente.
+\begin{lstlisting}[language=SQL, caption={DB Schema}, label={DB Schema}]
+CREATE TABLE logs (
+	id SERIAL PRIMARY KEY,
+	log VARCHAR(1023),
+	date TIMESTAMP
+);
+
+CREATE TABLE channels (
+	name VARCHAR(255) PRIMARY KEY,
+	password VARCHAR(255) NULL
+);
+\end{lstlisting}
+
+
+\newpage
+
+
+
+\section{Risultati}
+Questo server offre una normale esperienza IRC, con tutte le dovute comodità; invece di essere solamente sperimentale, questo progetto è effettivamente utilizzabile come server (si consiglia KVIrc come client per la facità d'utilizzo).
+
+
+\end{document}
