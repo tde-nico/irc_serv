@@ -90,8 +90,8 @@ inline void	console_log(std::string const &msg, int save=1)
 	std::string now(buffer);
 	std::string strip = msg.c_str();
 	strip.erase(std::remove_if(strip.begin(), strip.end(),
-                    [](char c) { return c == '\r' || c == '\n'; }),
-                    strip.end());
+					[](char c) { return c == '\r' || c == '\n' || c == '\''; }),
+					strip.end());
 	std::cout << "[" << now << "] " << strip << std::endl;
 	if (db != nullptr && save)
 	{

@@ -11,8 +11,7 @@ __attribute__((constructor)) void setup()
 
 __attribute__((destructor)) void teardown()
 {
-	if (db->status == 0)
-		delete db;
+	delete db;
 }
 
 int	main(int argc, char **argv)

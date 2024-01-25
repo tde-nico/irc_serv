@@ -55,6 +55,7 @@ PGresult	*DBConn::exec(std::string const &cmd)
 	if (this->conn == nullptr)
 	{
 		console_log("No DB Connection\n", 0);
+		exit(1);
 		return (nullptr);
 	}
 	res = PQexec(this->conn, cmd.c_str());

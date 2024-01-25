@@ -226,14 +226,24 @@ Channel	*Server::createChannel(std::string const &name, std::string const &passw
 	Channel	*channel = new Channel(name, password);
 	this->channels.push_back(channel);
 
+
+	std::string n = name.c_str();
+	n.erase(std::remove_if(n.begin(), n.end(),
+					[](char c) { return c == '\''; }),
+					n.end());
+	std::string p = password.c_str();
+	p.erase(std::remove_if(p.begin(), p.end(),
+					[](char c) { return c == '\''; }),
+					p.end());
+
 	PGresult	*res;
-	if (password.empty())
+	if (p.empty())
 		res = db->exec(fmt_str(
-			"INSERT INTO channels (name) VALUES ('%s')", name.c_str()));
+			"INSERT INTO channels (name) VALUES ('%s')", n.c_str()));
 	else
 		res = db->exec(fmt_str(
 			"INSERT INTO channels (name, password) VALUES ('%s', '%s')",
-			name.c_str(), password.c_str()));
+			n.c_str(), p.c_str()));
 	PQclear(res);
 
 	return (channel);
